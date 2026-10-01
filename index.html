@@ -71,36 +71,9 @@
 
     .controls-top {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       align-items: center;
       flex-wrap: wrap;
-    }
-
-    .config-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--soft);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--line);
-    }
-
-    .config-group label {
-      font-size: 0.85rem;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    select, input[type="number"] {
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-family: inherit;
-      font-weight: 700;
-      outline: none;
     }
 
     button {
@@ -129,6 +102,12 @@
       color: #000;
     }
 
+    .btn-undo {
+      background: #3a3f4d;
+      color: var(--accent-2);
+      border: 1px solid rgba(255, 209, 102, 0.3);
+    }
+
     .main-grid {
       display: grid;
       grid-template-columns: 1fr 360px;
@@ -145,6 +124,46 @@
       border: 1px solid var(--line);
       padding: 24px;
       box-shadow: var(--shadow);
+    }
+
+    /* Setup Screen */
+    .setup-card {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .setup-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setup-group label {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    select, input[type="text"] {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      outline: none;
+    }
+
+    .player-inputs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
     }
 
     /* Target Display */
@@ -178,6 +197,31 @@
       margin-top: 10px;
     }
 
+    /* Modifier Keypad */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .keypad.quad-enabled {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .btn-mod {
+      padding: 28px 12px;
+      font-size: 1.1rem;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .btn-mod.single { border-color: var(--blue); color: var(--blue); }
+    .btn-mod.double { border-color: var(--accent-2); color: var(--accent-2); }
+    .btn-mod.triple { border-color: var(--accent); color: var(--accent); }
+    .btn-mod.quad { border-color: var(--purple); color: var(--purple); }
+    .btn-mod.miss { grid-column: span 3; color: var(--danger); background: var(--soft); }
+    .keypad.quad-enabled .btn-mod.miss { grid-column: span 4; }
+
     /* Scoreboard */
     .scoreboard {
       display: grid;
@@ -206,37 +250,15 @@
       font-size: 0.85rem;
       margin-bottom: 4px;
       font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .player-score {
       font-size: 2rem;
       font-weight: 700;
     }
-
-    /* Modifier Keypad */
-    .keypad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .keypad.quad-enabled {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .btn-mod {
-      padding: 22px 8px;
-      font-size: 1rem;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-    }
-
-    .btn-mod.single { border-color: var(--blue); color: var(--blue); }
-    .btn-mod.double { border-color: var(--accent-2); color: var(--accent-2); }
-    .btn-mod.triple { border-color: var(--accent); color: var(--accent); }
-    .btn-mod.quad { border-color: var(--purple); color: var(--purple); }
-    .btn-mod.bull { grid-column: span 1; background: var(--soft); }
-    .btn-mod.miss { grid-column: span 1; color: var(--danger); }
 
     /* History Feed */
     .history-list {
@@ -264,24 +286,49 @@
     <header>
       <h1>FLASH POINT</h1>
       <div class="controls-top">
-        <div class="config-group">
-          <label for="player-count">Players:</label>
-          <input type="number" id="player-count" min="1" max="8" value="2" style="width: 50px;">
-        </div>
-
-        <div class="config-group">
-          <label for="board-type">Board:</label>
-          <select id="board-type" onchange="toggleBoardType()">
-            <option value="basic">Standard Board</option>
-            <option value="quad">Quad Board</option>
-          </select>
-        </div>
-
-        <button onclick="startNewGame()" class="btn-accent">Start New Game</button>
+        <button id="undo-btn" onclick="undoLastTurn()" class="btn-undo" style="display: none;">↩ Undo Turn</button>
+        <button onclick="showSetupScreen()" class="btn-accent">New Game</button>
       </div>
     </header>
 
-    <div class="main-grid">
+    <!-- SETUP VIEW -->
+    <div id="setup-view" class="card setup-card">
+      <h2 style="font-size: 1.5rem; color: var(--accent);">Game Setup</h2>
+      
+      <div class="setup-group">
+        <label for="board-type">Board Type</label>
+        <select id="board-type">
+          <option value="basic">Standard Board (Single, Double, Triple)</option>
+          <option value="quad">Quad Board (Single, Double, Triple, Quad)</option>
+        </select>
+      </div>
+
+      <div class="setup-group">
+        <label for="player-count">Number of Players</label>
+        <select id="player-count" onchange="renderPlayerNameInputs()">
+          <option value="1">1 Player</option>
+          <option value="2" selected>2 Players</option>
+          <option value="3">3 Players</option>
+          <option value="4">4 Players</option>
+          <option value="5">5 Players</option>
+          <option value="6">6 Players</option>
+          <option value="7">7 Players</option>
+          <option value="8">8 Players</option>
+        </select>
+      </div>
+
+      <div class="setup-group">
+        <label>Player Names</label>
+        <div id="player-inputs-container" class="player-inputs-list">
+          <!-- Dynamically generated player inputs -->
+        </div>
+      </div>
+
+      <button onclick="startNewGame()" class="btn-accent" style="margin-top: 12px; padding: 18px; font-size: 1.1rem;">Start Game</button>
+    </div>
+
+    <!-- MAIN GAME VIEW -->
+    <div id="game-view" class="main-grid" style="display: none;">
       <!-- Left Column: Target & Input Controls -->
       <div class="card">
         <!-- Dynamic Target Display -->
@@ -297,8 +344,6 @@
           <button class="btn-mod double" onclick="handleInput(2)">DOUBLE (2x)</button>
           <button class="btn-mod triple" onclick="handleInput(3)">TRIPLE (3x)</button>
           <button class="btn-mod quad" id="quad-btn" style="display: none;" onclick="handleInput(4)">QUAD (4x)</button>
-          <button class="btn-mod bull" onclick="handleBull(25)">OUTER BULL (25)</button>
-          <button class="btn-mod bull" onclick="handleBull(50)">INNER BULL (50)</button>
           <button class="btn-mod miss" onclick="handleInput(0)">MISS (0)</button>
         </div>
       </div>
@@ -328,8 +373,43 @@
     let players = [];
     let currentPlayerIndex = 0;
     let roundCount = 1;
+    let historyStack = [];
 
-    function toggleBoardType() {
+    function renderPlayerNameInputs() {
+      const count = parseInt(document.getElementById('player-count').value);
+      const container = document.getElementById('player-inputs-container');
+      container.innerHTML = '';
+
+      for (let i = 1; i <= count; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = `Player ${i} Name`;
+        input.value = `Player ${i}`;
+        input.id = `player-input-${i}`;
+        container.appendChild(input);
+      }
+    }
+
+    function showSetupScreen() {
+      document.getElementById('setup-view').style.display = 'flex';
+      document.getElementById('game-view').style.display = 'none';
+      document.getElementById('undo-btn').style.display = 'none';
+      renderPlayerNameInputs();
+    }
+
+    function startNewGame() {
+      const count = parseInt(document.getElementById('player-count').value);
+      players = [];
+
+      for (let i = 1; i <= count; i++) {
+        const nameVal = document.getElementById(`player-input-${i}`).value.trim();
+        players.push({
+          id: i,
+          name: nameVal || `Player ${i}`,
+          score: 0
+        });
+      }
+
       const boardType = document.getElementById('board-type').value;
       const quadBtn = document.getElementById('quad-btn');
       const keypad = document.getElementById('keypad');
@@ -341,28 +421,18 @@
         quadBtn.style.display = 'none';
         keypad.classList.remove('quad-enabled');
       }
-    }
 
-    function startNewGame() {
-      // Setup players based on selector input
-      const countInput = parseInt(document.getElementById('player-count').value) || 1;
-      const numPlayers = Math.max(1, Math.min(8, countInput));
-      
-      players = [];
-      for (let i = 0; i < numPlayers; i++) {
-        players.push({ id: i + 1, name: `Player ${i + 1}`, score: 0 });
-      }
-
-      // Reset state & pool 1-20
       availableNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
       currentPlayerIndex = 0;
       roundCount = 1;
+      historyStack = [];
 
-      // Update UI elements
-      toggleBoardType();
-      renderScoreboard();
-      document.getElementById('history-log').innerHTML = '';
+      document.getElementById('setup-view').style.display = 'none';
+      document.getElementById('game-view').style.display = 'grid';
+      document.getElementById('undo-btn').style.display = 'inline-block';
       
+      renderScoreboard();
+      renderLog();
       nextRound();
     }
 
@@ -390,7 +460,6 @@
         return;
       }
 
-      // Select random target from remaining numbers without repeating
       const randomIndex = Math.floor(Math.random() * availableNumbers.length);
       currentTarget = availableNumbers[randomIndex];
       availableNumbers.splice(randomIndex, 1);
@@ -400,10 +469,10 @@
     }
 
     function updateTurnDisplay() {
+      if (availableNumbers.length === 0 && !currentTarget) return;
       const activePlayer = players[currentPlayerIndex];
       document.getElementById('turn-display').innerText = `${activePlayer.name}'s Turn (Round ${roundCount})`;
       
-      // Update score card highlights
       players.forEach((_, idx) => {
         const card = document.getElementById(`player-card-${idx}`);
         if (card) {
@@ -416,22 +485,22 @@
       });
     }
 
-    function advanceTurn() {
-      currentPlayerIndex++;
-      if (currentPlayerIndex >= players.length) {
-        currentPlayerIndex = 0;
-        roundCount++;
-        nextRound();
-      } else {
-        updateTurnDisplay();
-      }
-    }
-
     function handleInput(multiplier) {
       if (!currentTarget && availableNumbers.length === 0) return;
 
-      const points = currentTarget * multiplier;
       const player = players[currentPlayerIndex];
+      const points = currentTarget * multiplier;
+
+      // Save state to undo history stack before applying changes
+      historyStack.push({
+        playerIndex: currentPlayerIndex,
+        roundCount: roundCount,
+        currentTarget: currentTarget,
+        availableNumbers: [...availableNumbers],
+        pointsAdded: points,
+        multiplier: multiplier
+      });
+
       player.score += points;
 
       let label = "MISS";
@@ -442,19 +511,50 @@
 
       logRound(`${player.name} - R${roundCount} [T:${currentTarget}]: ${label} (+${points} pts)`);
       updateScores();
-      advanceTurn();
+
+      // Advance Turn / Round
+      currentPlayerIndex++;
+      if (currentPlayerIndex >= players.length) {
+        currentPlayerIndex = 0;
+        roundCount++;
+        nextRound();
+      } else {
+        updateTurnDisplay();
+      }
     }
 
-    function handleBull(value) {
-      if (!currentTarget && availableNumbers.length === 0) return;
+    function undoLastTurn() {
+      if (historyStack.length === 0) {
+        alert("No turns to undo!");
+        return;
+      }
 
-      const player = players[currentPlayerIndex];
-      player.score += value;
+      const lastState = historyStack.pop();
 
-      const label = value === 50 ? "INNER BULL" : "OUTER BULL";
-      logRound(`${player.name} - R${roundCount}: ${label} (+${value} pts)`);
+      // Put target back into available pool if a new round was started
+      if (currentTarget !== null && currentTarget !== lastState.currentTarget) {
+        availableNumbers.push(currentTarget);
+      }
+
+      // Restore game state variables
+      currentPlayerIndex = lastState.playerIndex;
+      roundCount = lastState.roundCount;
+      currentTarget = lastState.currentTarget;
+      availableNumbers = lastState.availableNumbers;
+
+      // Revert player score
+      players[currentPlayerIndex].score -= lastState.pointsAdded;
+
+      // Re-render UI
+      document.getElementById('target-display').innerText = currentTarget;
+      updateTurnDisplay();
       updateScores();
-      advanceTurn();
+
+      // Remove last entry from history log UI
+      const log = document.getElementById('history-log');
+      if (log.firstChild) {
+        log.removeChild(log.firstChild);
+      }
     }
 
     function updateScores() {
@@ -470,6 +570,10 @@
       li.className = 'history-item';
       li.innerText = text;
       log.prepend(li);
+    }
+
+    function renderLog() {
+      document.getElementById('history-log').innerHTML = '';
     }
 
     function announceWinner() {
@@ -492,8 +596,8 @@
       alert(`Game Over!\n${resultText}`);
     }
 
-    // Initialize default game state on page load
-    startNewGame();
+    // Show setup screen on load
+    showSetupScreen();
   </script>
 </body>
 </html>
