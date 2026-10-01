@@ -324,7 +324,7 @@
         </div>
       </div>
 
-      <button onclick="startNewGame()" class="btn-accent" style="margin-top: 12px; padding: 18px; font-size: 1.1rem;">Start Game</button>
+      <button onclick="startNewGame()" class="btn-accent" style="margin-top: 12px; padding: 18px; font-size: 1.1rem;">Start Game (5 Rounds)</button>
     </div>
 
     <!-- MAIN GAME VIEW -->
@@ -373,6 +373,7 @@
     let players = [];
     let currentPlayerIndex = 0;
     let roundCount = 1;
+    const MAX_ROUNDS = 5;
     let historyStack = [];
 
     function renderPlayerNameInputs() {
@@ -453,7 +454,7 @@
     }
 
     function nextRound() {
-      if (availableNumbers.length === 0) {
+      if (roundCount > MAX_ROUNDS || availableNumbers.length === 0) {
         document.getElementById('target-display').innerText = "DONE";
         document.getElementById('turn-display').innerText = "Game Complete!";
         announceWinner();
@@ -469,9 +470,9 @@
     }
 
     function updateTurnDisplay() {
-      if (availableNumbers.length === 0 && !currentTarget) return;
+      if (roundCount > MAX_ROUNDS) return;
       const activePlayer = players[currentPlayerIndex];
-      document.getElementById('turn-display').innerText = `${activePlayer.name}'s Turn (Round ${roundCount})`;
+      document.getElementById('turn-display').innerText = `${activePlayer.name}'s Turn (Round ${roundCount} of ${MAX_ROUNDS})`;
       
       players.forEach((_, idx) => {
         const card = document.getElementById(`player-card-${idx}`);
@@ -486,7 +487,7 @@
     }
 
     function handleInput(multiplier) {
-      if (!currentTarget && availableNumbers.length === 0) return;
+      if (roundCount > MAX_ROUNDS) return;
 
       const player = players[currentPlayerIndex];
       const points = currentTarget * multiplier;
@@ -593,7 +594,7 @@
         ? `It's a tie between ${winners.join(' & ')} with ${maxScore} pts!`
         : `${winners[0]} wins with ${maxScore} pts!`;
 
-      alert(`Game Over!\n${resultText}`);
+      alert(`Game Over after 5 Rounds!\n${resultText}`);
     }
 
     // Show setup screen on load
