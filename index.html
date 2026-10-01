@@ -97,9 +97,25 @@
       transform: translateY(0);
     }
 
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+      filter: none !important;
+    }
+
     .btn-accent {
       background: var(--accent);
       color: #000;
+    }
+
+    .btn-submit {
+      background: var(--success);
+      color: #000;
+      font-size: 1.1rem;
+      padding: 16px 24px;
+      width: 100%;
+      margin-top: 16px;
     }
 
     .btn-undo {
@@ -170,7 +186,7 @@
     .target-card {
       background: linear-gradient(135deg, var(--panel-2), var(--soft));
       text-align: center;
-      padding: 28px;
+      padding: 24px;
       margin-bottom: 24px;
       border: 2px solid var(--accent);
     }
@@ -197,25 +213,40 @@
       margin-top: 10px;
     }
 
-    .dart-tracker {
+    /* Turn Darts Tracker */
+    .darts-turn-container {
       display: flex;
       justify-content: center;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 12px;
+      margin-top: 16px;
     }
 
-    .dart-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--soft);
-      border: 2px solid var(--muted);
+    .dart-slot {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      min-width: 90px;
+      text-align: center;
     }
 
-    .dart-dot.active {
-      background: var(--accent-2);
+    .dart-slot.active {
       border-color: var(--accent-2);
-      box-shadow: 0 0 8px var(--accent-2);
+      box-shadow: 0 0 10px rgba(255, 209, 102, 0.2);
+    }
+
+    .dart-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .dart-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 2px;
     }
 
     /* Modifier Keypad */
@@ -307,7 +338,7 @@
     <header>
       <h1>FLASH POINT</h1>
       <div class="controls-top">
-        <button id="undo-btn" onclick="undoLastTurn()" class="btn-undo" style="display: none;">↩ Undo Dart</button>
+        <button id="undo-btn" onclick="undoLastDart()" class="btn-undo" style="display: none;">↩ Undo Dart</button>
         <button onclick="showSetupScreen()" class="btn-accent">New Game</button>
       </div>
     </header>
@@ -357,21 +388,34 @@
           <div class="target-title">Current Round Target</div>
           <div class="target-number" id="target-display">--</div>
           <div class="current-turn-indicator" id="turn-display">Player 1's Turn</div>
-          <div class="dart-tracker">
-            <div class="dart-dot" id="dart-1"></div>
-            <div class="dart-dot" id="dart-2"></div>
-            <div class="dart-dot" id="dart-3"></div>
+
+          <!-- Current Turn 3 Darts Tracker -->
+          <div class="darts-turn-container">
+            <div class="dart-slot" id="slot-1">
+              <div class="dart-label">Dart 1</div>
+              <div class="dart-val" id="val-1">-</div>
+            </div>
+            <div class="dart-slot" id="slot-2">
+              <div class="dart-label">Dart 2</div>
+              <div class="dart-val" id="val-2">-</div>
+            </div>
+            <div class="dart-slot" id="slot-3">
+              <div class="dart-label">Dart 3</div>
+              <div class="dart-val" id="val-3">-</div>
+            </div>
           </div>
         </div>
 
         <!-- Modifier Controls -->
         <div class="keypad" id="keypad">
-          <button class="btn-mod single" onclick="handleInput(1)">SINGLE (1x)</button>
-          <button class="btn-mod double" onclick="handleInput(2)">DOUBLE (2x)</button>
-          <button class="btn-mod triple" onclick="handleInput(3)">TRIPLE (3x)</button>
+          <button class="btn-mod single" id="btn-single" onclick="handleInput(1)">SINGLE (1x)</button>
+          <button class="btn-mod double" id="btn-double" onclick="handleInput(2)">DOUBLE (2x)</button>
+          <button class="btn-mod triple" id="btn-triple" onclick="handleInput(3)">TRIPLE (3x)</button>
           <button class="btn-mod quad" id="quad-btn" style="display: none;" onclick="handleInput(4)">QUAD (4x)</button>
-          <button class="btn-mod miss" onclick="handleInput(0)">MISS (0)</button>
+          <button class="btn-mod miss" id="btn-miss" onclick="handleInput(0)">MISS (0)</button>
         </div>
+
+        <button id="submit-turn-btn" class="btn-submit" onclick="submitTurn()" disabled>Submit Turn</button>
       </div>
 
       <!-- Right Column: Scores & Log -->
@@ -399,9 +443,13 @@
     let players = [];
     let currentPlayerIndex = 0;
     let roundCount = 1;
-    let currentDart = 1;
     const MAX_ROUNDS = 5;
     const MAX_DARTS = 3;
+
+    // Current turn state (3 darts for current player)
+    let currentTurnDarts = [];
+
+    // History stack for undo capability
     let historyStack = [];
 
     function renderPlayerNameInputs() {
@@ -454,7 +502,7 @@
       availableNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
       currentPlayerIndex = 0;
       roundCount = 1;
-      currentDart = 1;
+      currentTurnDarts = [];
       historyStack = [];
 
       document.getElementById('setup-view').style.display = 'none';
@@ -486,7 +534,8 @@
       if (roundCount > MAX_ROUNDS || availableNumbers.length === 0) {
         document.getElementById('target-display').innerText = "DONE";
         document.getElementById('turn-display').innerText = "Game Complete!";
-        updateDartTracker();
+        disableKeypad(true);
+        document.getElementById('submit-turn-btn').disabled = true;
         announceWinner();
         return;
       }
@@ -515,96 +564,137 @@
         }
       });
 
-      updateDartTracker();
+      updateDartTrackerUI();
     }
 
-    function updateDartTracker() {
+    function updateDartTrackerUI() {
       for (let i = 1; i <= MAX_DARTS; i++) {
-        const dot = document.getElementById(`dart-${i}`);
-        if (dot) {
-          if (i <= currentDart && roundCount <= MAX_ROUNDS) {
-            dot.classList.add('active');
-          } else {
-            dot.classList.remove('active');
-          }
+        const slot = document.getElementById(`slot-${i}`);
+        const val = document.getElementById(`val-${i}`);
+        const dartData = currentTurnDarts[i - 1];
+
+        if (dartData) {
+          slot.classList.remove('active');
+          val.innerText = `${dartData.label} (+${dartData.points})`;
+        } else if (i === currentTurnDarts.length + 1 && currentTurnDarts.length < MAX_DARTS) {
+          slot.classList.add('active');
+          val.innerText = '-';
+        } else {
+          slot.classList.remove('active');
+          val.innerText = '-';
         }
       }
+
+      // Keypad enable/disable based on whether 3 darts entered
+      disableKeypad(currentTurnDarts.length >= MAX_DARTS);
+
+      // Submit button enabled ONLY when 3 darts entered
+      document.getElementById('submit-turn-btn').disabled = currentTurnDarts.length < MAX_DARTS;
+    }
+
+    function disableKeypad(disabled) {
+      document.getElementById('btn-single').disabled = disabled;
+      document.getElementById('btn-double').disabled = disabled;
+      document.getElementById('btn-triple').disabled = disabled;
+      document.getElementById('quad-btn').disabled = disabled;
+      document.getElementById('btn-miss').disabled = disabled;
     }
 
     function handleInput(multiplier) {
-      if (roundCount > MAX_ROUNDS) return;
+      if (roundCount > MAX_ROUNDS || currentTurnDarts.length >= MAX_DARTS) return;
+
+      const points = currentTarget * multiplier;
+      let label = "MISS";
+      if (multiplier === 1) label = "1x";
+      if (multiplier === 2) label = "2x";
+      if (multiplier === 3) label = "3x";
+      if (multiplier === 4) label = "4x";
+
+      const dartEntry = {
+        multiplier: multiplier,
+        points: points,
+        label: label
+      };
+
+      currentTurnDarts.push(dartEntry);
+      updateDartTrackerUI();
+    }
+
+    function submitTurn() {
+      if (currentTurnDarts.length < MAX_DARTS) return;
 
       const player = players[currentPlayerIndex];
-      const points = currentTarget * multiplier;
+      const turnPoints = currentTurnDarts.reduce((sum, d) => sum + d.points, 0);
 
-      // Save state to undo history stack before applying changes
+      // Save complete turn state for full undo capability
       historyStack.push({
         playerIndex: currentPlayerIndex,
         roundCount: roundCount,
-        currentDart: currentDart,
         currentTarget: currentTarget,
         availableNumbers: [...availableNumbers],
-        pointsAdded: points,
-        multiplier: multiplier
+        turnDarts: [...currentTurnDarts],
+        turnPoints: turnPoints
       });
 
-      player.score += points;
-
-      let label = "MISS";
-      if (multiplier === 1) label = "SINGLE";
-      if (multiplier === 2) label = "DOUBLE";
-      if (multiplier === 3) label = "TRIPLE";
-      if (multiplier === 4) label = "QUAD";
-
-      logRound(`${player.name} - R${roundCount} Dart ${currentDart} [T:${currentTarget}]: ${label} (+${points} pts)`);
+      // Apply points to player
+      player.score += turnPoints;
       updateScores();
 
-      // Advance Dart / Player / Round
-      currentDart++;
-      if (currentDart > MAX_DARTS) {
-        currentDart = 1;
-        currentPlayerIndex++;
-        if (currentPlayerIndex >= players.length) {
-          currentPlayerIndex = 0;
-          roundCount++;
-          nextRound();
-        } else {
-          updateTurnDisplay();
-        }
+      // Log turn details
+      const dartSummary = currentTurnDarts.map(d => d.label).join(', ');
+      logRound(`${player.name} - R${roundCount} [T:${currentTarget}]: [${dartSummary}] (+${turnPoints} pts)`);
+
+      // Reset turn darts for next turn
+      currentTurnDarts = [];
+
+      // Advance Player / Round
+      currentPlayerIndex++;
+      if (currentPlayerIndex >= players.length) {
+        currentPlayerIndex = 0;
+        roundCount++;
+        nextRound();
       } else {
         updateTurnDisplay();
       }
     }
 
-    function undoLastTurn() {
+    function undoLastDart() {
+      // First try undoing an unsubmitted dart in the current turn
+      if (currentTurnDarts.length > 0) {
+        currentTurnDarts.pop();
+        updateDartTrackerUI();
+        return;
+      }
+
+      // If current turn is empty, undo previous player's submitted turn
       if (historyStack.length === 0) {
-        alert("No darts to undo!");
+        alert("No darts or turns to undo!");
         return;
       }
 
       const lastState = historyStack.pop();
 
-      // Put target back into available pool if a new round was started
+      // If a new round was triggered, put the new target back
       if (currentTarget !== null && currentTarget !== lastState.currentTarget) {
         availableNumbers.push(currentTarget);
       }
 
-      // Restore game state variables
+      // Restore game state
       currentPlayerIndex = lastState.playerIndex;
       roundCount = lastState.roundCount;
-      currentDart = lastState.currentDart;
       currentTarget = lastState.currentTarget;
       availableNumbers = lastState.availableNumbers;
+      currentTurnDarts = lastState.turnDarts;
 
       // Revert player score
-      players[currentPlayerIndex].score -= lastState.pointsAdded;
+      players[currentPlayerIndex].score -= lastState.turnPoints;
 
       // Re-render UI
       document.getElementById('target-display').innerText = currentTarget;
       updateTurnDisplay();
       updateScores();
 
-      // Remove last entry from history log UI
+      // Remove last log entry
       const log = document.getElementById('history-log');
       if (log.firstChild) {
         log.removeChild(log.firstChild);
