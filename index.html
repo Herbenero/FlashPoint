@@ -197,6 +197,27 @@
       margin-top: 10px;
     }
 
+    .dart-tracker {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .dart-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--soft);
+      border: 2px solid var(--muted);
+    }
+
+    .dart-dot.active {
+      background: var(--accent-2);
+      border-color: var(--accent-2);
+      box-shadow: 0 0 8px var(--accent-2);
+    }
+
     /* Modifier Keypad */
     .keypad {
       display: grid;
@@ -286,7 +307,7 @@
     <header>
       <h1>FLASH POINT</h1>
       <div class="controls-top">
-        <button id="undo-btn" onclick="undoLastTurn()" class="btn-undo" style="display: none;">↩ Undo Turn</button>
+        <button id="undo-btn" onclick="undoLastTurn()" class="btn-undo" style="display: none;">↩ Undo Dart</button>
         <button onclick="showSetupScreen()" class="btn-accent">New Game</button>
       </div>
     </header>
@@ -336,6 +357,11 @@
           <div class="target-title">Current Round Target</div>
           <div class="target-number" id="target-display">--</div>
           <div class="current-turn-indicator" id="turn-display">Player 1's Turn</div>
+          <div class="dart-tracker">
+            <div class="dart-dot" id="dart-1"></div>
+            <div class="dart-dot" id="dart-2"></div>
+            <div class="dart-dot" id="dart-3"></div>
+          </div>
         </div>
 
         <!-- Modifier Controls -->
@@ -373,7 +399,9 @@
     let players = [];
     let currentPlayerIndex = 0;
     let roundCount = 1;
+    let currentDart = 1;
     const MAX_ROUNDS = 5;
+    const MAX_DARTS = 3;
     let historyStack = [];
 
     function renderPlayerNameInputs() {
@@ -426,6 +454,7 @@
       availableNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
       currentPlayerIndex = 0;
       roundCount = 1;
+      currentDart = 1;
       historyStack = [];
 
       document.getElementById('setup-view').style.display = 'none';
@@ -457,6 +486,7 @@
       if (roundCount > MAX_ROUNDS || availableNumbers.length === 0) {
         document.getElementById('target-display').innerText = "DONE";
         document.getElementById('turn-display').innerText = "Game Complete!";
+        updateDartTracker();
         announceWinner();
         return;
       }
@@ -484,6 +514,21 @@
           }
         }
       });
+
+      updateDartTracker();
+    }
+
+    function updateDartTracker() {
+      for (let i = 1; i <= MAX_DARTS; i++) {
+        const dot = document.getElementById(`dart-${i}`);
+        if (dot) {
+          if (i <= currentDart && roundCount <= MAX_ROUNDS) {
+            dot.classList.add('active');
+          } else {
+            dot.classList.remove('active');
+          }
+        }
+      }
     }
 
     function handleInput(multiplier) {
@@ -496,6 +541,7 @@
       historyStack.push({
         playerIndex: currentPlayerIndex,
         roundCount: roundCount,
+        currentDart: currentDart,
         currentTarget: currentTarget,
         availableNumbers: [...availableNumbers],
         pointsAdded: points,
@@ -510,15 +556,21 @@
       if (multiplier === 3) label = "TRIPLE";
       if (multiplier === 4) label = "QUAD";
 
-      logRound(`${player.name} - R${roundCount} [T:${currentTarget}]: ${label} (+${points} pts)`);
+      logRound(`${player.name} - R${roundCount} Dart ${currentDart} [T:${currentTarget}]: ${label} (+${points} pts)`);
       updateScores();
 
-      // Advance Turn / Round
-      currentPlayerIndex++;
-      if (currentPlayerIndex >= players.length) {
-        currentPlayerIndex = 0;
-        roundCount++;
-        nextRound();
+      // Advance Dart / Player / Round
+      currentDart++;
+      if (currentDart > MAX_DARTS) {
+        currentDart = 1;
+        currentPlayerIndex++;
+        if (currentPlayerIndex >= players.length) {
+          currentPlayerIndex = 0;
+          roundCount++;
+          nextRound();
+        } else {
+          updateTurnDisplay();
+        }
       } else {
         updateTurnDisplay();
       }
@@ -526,7 +578,7 @@
 
     function undoLastTurn() {
       if (historyStack.length === 0) {
-        alert("No turns to undo!");
+        alert("No darts to undo!");
         return;
       }
 
@@ -540,6 +592,7 @@
       // Restore game state variables
       currentPlayerIndex = lastState.playerIndex;
       roundCount = lastState.roundCount;
+      currentDart = lastState.currentDart;
       currentTarget = lastState.currentTarget;
       availableNumbers = lastState.availableNumbers;
 
