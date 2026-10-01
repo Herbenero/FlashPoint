@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flash Point — Dart Game Web App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f1115;
+      --panel:#171a20;
+      --panel-2:#1d2129;
+      --soft:#252a34;
+      --line:rgba(255,255,255,.08);
+      --text:#f5f7fb;
+      --muted:#a8b0c0;
+      --accent:#ff5a36;
+      --accent-2:#ffd166;
+      --success:#67e8a5;
+      --danger:#ff6b6b;
+      --blue:#7cc6ff;
+      --shadow: 0 20px 50px rgba(0,0,0,.35);
+      --radius: 22px;
+      --radius-sm: 14px;
+      --max: 1400px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:"Space Grotesk", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 15% 15%, rgba(255,90,54,.18), transparent 22%),
+        radial-gradient(circle at 85% 20%, rgba(255,209,102,.12), transparent 20%),
+        radial-gradient(circle at 70% 80%, rgba(124,198,255,.10), transparent 20%),
+        linear-gradient(180deg, #0b0d11 0%, #0f1115 45%, #11141a 100%);
+      overflow-x:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent);
+      pointer-events:none;
+      opacity:.25;
+    }
+
+    .wrap{
+      width:min(calc(100% - 2rem), var(--max));
+      margin:0 auto;
+    }
+
+    .reveal{
+      opacity:0;
+      transform:translateY(22px);
+      transition:opacity .7s ease, transform .7s ease;
+    }
+    .reveal.in{
+      opacity:1;
+      transform:none;
+    }
+
+    .app-shell{
+      padding:1rem 0 2rem;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      padding:1rem 0 1.2rem;
+      border-bottom:1px solid var(--line);
+      margin-bottom:1.4rem;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:1rem;
+    }
+
+    .brand-mark{
+      width:56px;
+      height:56px;
+      border-radius:18px;
+      position:relative;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,.12), transparent 56%),
+        conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--blue), var(--accent));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 0 12px 28px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .brand-mark::before,
+    .brand-mark::after{
+      content:"";
+      position:absolute;
+      inset:50%;
+      transform:translate(-50%,-50%);
+      border-radius:50%;
+      border:2px solid rgba(15,17,21,.85);
+    }
+    .brand-mark::before{ width:68%; height:68%; }
+    .brand-mark::after{ width:34%; height:34%; }
+
+    .brand-copy h1{
+      margin:0;
+      font-family:"Bebas Neue", cursive;
+      letter-spacing:.08em;
+      font-size:clamp(2rem, 4vw, 3.5rem);
+      line-height:.9;
+      font-weight:400;
+    }
+    .brand-copy p{
+      margin:.2rem 0 0;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+
+    .status-pill{
+      padding:.9rem 1rem;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:999px;
+      color:var(--muted);
+      font-size:.9rem;
+      backdrop-filter: blur(10px);
+      white-space:nowrap;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:1.2rem;
+      align-items:start;
+    }
+
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+    }
+
+    .panel-inner{
+      padding:1.15rem;
+    }
+
+    .hero-band{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:1rem;
+      margin-bottom:1.2rem;
+    }
+
+    .round-panel{
+      min-height:250px;
+      position:relative;
+      background:
+        radial-gradient(circle at top left, rgba(255,90,54,.16), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+    }
+
+    .round-label{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:1rem;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      font-size:.8rem;
+      margin-bottom:.8rem;
+    }
+
+    .target-wrap{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:1rem;
+      align-items:end;
+      margin-top:.6rem;
+    }
+
+    .target-number{
+      font-family:"Bebas Neue", cursive;
+      font-size:clamp(6rem, 14vw, 10rem);
+      line-height:.85;
+      letter-spacing:.04em;
+      color:var(--accent-2);
+      text-shadow: 0 0 20px rgba(255,209,102,.18);
+    }
+
+    .target-caption{
+      color:var(--muted);
+      max-width:26ch;
+      font-size:.98rem;
+      line-height:1.45;
+    }
+
+    .mini-stats{
+      display:grid;
+      gap:.7rem;
+    }
+
+    .mini-stat{
+      padding:.9rem 1rem;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:18px;
+    }
+
+    .mini-stat strong{
+      display:block;
+      font-size:1.35rem;
+      color:var(--text);
+    }
+    .mini-stat span{
+      color:var(--muted);
+      font-size:.88rem;
+    }
+
+    .setup-grid{
+      display:grid;
+      gap:1rem;
+    }
+
+    .section-title{
+      margin:0 0 .75rem;
+      font-size:1rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+
+    .fields{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr auto;
+      gap:.8rem;
+      align-items:end;
+    }
+
+    .field{
+      display:grid;
+      gap:.4rem;
+    }
+
+    .field label{
+      font-size:.85rem;
+      color:var(--muted);
+    }
+
+    input, select, button, textarea{
+      font:inherit;
+    }
+
+    input[type="text"], select{
+      width:100%;
+      background:var(--panel-2);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:.9rem 1rem;
+      outline:none;
+      transition:border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+
+    input[type="text"]:focus, select:focus{
+      border-color:rgba(255,90,54,.55);
+      box-shadow:0 0 0 4px rgba(255,90,54,.12);
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+      border-radius:16px;
+      padding:.92rem 1rem;
+      transition:transform .16s ease, box-shadow .16s ease, background .2s ease, opacity .2s ease;
+      font-weight:700;
+      letter-spacing:.02em;
+    }
+    .btn:hover{ transform:translateY(-2px); }
+    .btn:active{ transform:translateY(0) scale(.98); }
+    .btn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .btn-primary{
+      color:#111;
+      background:linear-gradient(135deg, var(--accent-2), #ffb347);
+      box-shadow:0 12px 22px rgba(255,179,71,.22);
+    }
+
+    .btn-secondary{
+      color:var(--text);
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+    }
+
+    .player-list{
+      margin-top:.85rem;
+      display:flex;
+      flex-wrap:wrap;
+      gap:.55rem;
+    }
+
+    .player-chip{
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      padding:.6rem .8rem;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      gap:.55rem;
+      animation: popIn .35s ease both;
+    }
+    .player-chip button{
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      border:none;
+      background:rgba(255,107,107,.16);
+      color:#ffd0d0;
+      cursor:pointer;
+    }
+
+    @keyframes popIn{
+      from{opacity:0; transform:scale(.92) translateY(8px);}
+      to{opacity:1; transform:none;}
+    }
+
+    .game-grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:1.2rem;
+    }
+
+    .player-turn{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:end;
+      gap:1rem;
+      padding-bottom:1rem;
+      border-bottom:1px solid var(--line);
+      margin-bottom:1rem;
+    }
+
+    .player-turn h2{
+      margin:0;
+      font-family:"Bebas Neue", cursive;
+      letter-spacing:.06em;
+      font-size:clamp(2rem, 5vw, 3rem);
+      line-height:.95;
+    }
+
+    .player-turn p{
+      margin:.3rem 0 0;
+      color:var(--muted);
+    }
+
+    .current-mod{
+      padding:.8rem 1rem;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      min-width:190px;
+    }
+    .current-mod strong{
+      display:block;
+      color:var(--accent-2);
+      font-size:1.2rem;
+    }
+    .current-mod span{
+      color:var(--muted);
+      font-size:.88rem;
+    }
+
+    .control-stack{
+      display:grid;
+      gap:1rem;
+    }
+
+    .modifiers{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap:.7rem;
+    }
+
+    .mod-btn, .number-btn{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+      color:var(--text);
+      border-radius:18px;
+      padding:.95rem .7rem;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .16s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+
+    .mod-btn:hover, .number-btn:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,255,255,.18);
+    }
+    .mod-btn:active, .number-btn:active{
+      transform:translateY(0) scale(.98);
+    }
+    .mod-btn.active{
+      border-color:rgba(255,209,102,.45);
+      background:linear-gradient(180deg, rgba(255,209,102,.20), rgba(255,209,102,.08));
+      box-shadow: inset 0 0 0 1px rgba(255,209,102,.18);
+      color:#fff2c7;
+    }
+
+    .numbers{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap:.7rem;
+    }
+
+    .number-btn{
+      font-size:1.05rem;
+      min-height:58px;
+    }
+
+    .number-btn.miss{
+      background:linear-gradient(180deg, rgba(255,107,107,.18), rgba(255,107,107,.06));
+      color:#ffe0e0;
+    }
+
+    .dart-tray{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:.8rem;
+    }
+
+    .dart-slot{
+      min-height:94px;
+      padding:1rem;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+      display:grid;
+      align-content:center;
+      gap:.25rem;
+    }
+
+    .dart-slot .slot-label{
+      color:var(--muted);
+      font-size:.84rem;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+    }
+
+    .dart-slot .slot-hit{
+      font-weight:700;
+      font-size:1.1rem;
+    }
+
+    .dart-slot .slot-score{
+      color:var(--accent-2);
+      font-size:1rem;
+    }
+
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.8rem;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .left-actions, .right-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.8rem;
+    }
+
+    .submit-btn{
+      background:linear-gradient(135deg, var(--accent), #ff845f);
+      color:white;
+      box-shadow:0 16px 28px rgba(255,90,54,.2);
+    }
+
+    .undo-btn{
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      border:1px solid var(--line);
+    }
+
+    .scoreboard-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:end;
+      gap:1rem;
+      margin-bottom:1rem;
+    }
+
+    .scoreboard-head h3{
+      margin:0;
+      font-family:"Bebas Neue", cursive;
+      font-size:2.2rem;
+      letter-spacing:.06em;
+      line-height:.9;
+    }
+    .scoreboard-head p{
+      margin:.3rem 0 0;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+
+    .board-table{
+      width:100%;
+      border-collapse:collapse;
+      overflow:hidden;
+      border-radius:18px;
+      background:rgba(255,255,255,.03);
+    }
+    .board-table th,
+    .board-table td{
+      padding:.8rem .75rem;
+      text-align:center;
+      border-bottom:1px solid var(--line);
+      font-size:.92rem;
+    }
+    .board-table thead th{
+      color:var(--muted);
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      background:rgba(255,255,255,.03);
+      position:sticky;
+      top:0;
+    }
+    .board-table tbody tr.active-row{
+      background:rgba(255,209,102,.09);
+    }
+    .board-table tbody tr.winner{
+      background:rgba(103,232,165,.1);
+    }
+    .board-table td.name{
+      text-align:left;
+      font-weight:700;
+    }
+
+    .log{
+      margin-top:1rem;
+      display:grid;
+      gap:.7rem;
+    }
+
+    .log-item{
+      padding:.85rem .9rem;
+      border-radius:16px;
+      background:rgba(255,255,255,.035);
+      border:1px solid var(--line);
+      color:var(--muted);
+      font-size:.9rem;
+    }
+    .log-item strong{ color:var(--text); }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:32px;
+      height:32px;
+      border-radius:999px;
+      padding:0 .7rem;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      color:var(--text);
+      font-size:.85rem;
+      font-weight:700;
+    }
+
+    .hidden{ display:none !important; }
+
+    .end-banner{
+      margin-top:1rem;
+      padding:1rem 1.1rem;
+      border-radius:20px;
+      background:
+        linear-gradient(135deg, rgba(103,232,165,.18), rgba(255,255,255,.03));
+      border:1px solid rgba(103,232,165,.22);
+    }
+    .end-banner h4{
+      margin:0 0 .25rem;
+      font-size:1.2rem;
+    }
+    .end-banner p{
+      margin:0;
+      color:var(--muted);
+    }
+
+    @media (max-width: 1100px){
+      .layout{ grid-template-columns: 1fr; }
+      .hero-band{ grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px){
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .fields{
+        grid-template-columns: 1fr;
+      }
+      .modifiers{
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+      .numbers{
+        grid-template-columns: repeat(4, minmax(0,1fr));
+      }
+      .dart-tray{
+        grid-template-columns:1fr;
+      }
+      .target-wrap{
+        grid-template-columns:1fr;
+      }
+      .actions{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .left-actions, .right-actions{
+        width:100%;
+      }
+      .left-actions .btn, .right-actions .btn{
+        flex:1;
+      }
+    }
+
+    @media (max-width: 520px){
+      .numbers{
+        grid-template-columns: repeat(3, minmax(0,1fr));
+      }
+      .brand-copy h1{
+        font-size:2.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell wrap">
+    <header class="topbar reveal">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div class="brand-copy">
+          <h1>Flash Point</h1>
+          <p>5 rounds • 3 darts per turn • hit the round target and pile up points</p>
+        </div>
+      </div>
+      <div class="status-pill" id="globalStatus">Set up players and choose a board to begin.</div>
+    </header>
+
+    <main class="layout">
+      <section class="reveal">
+        <div class="hero-band">
+          <article class="panel round-panel">
+            <div class="panel-inner">
+              <div class="round-label">
+                <span id="roundMeta">Round 1 of 5</span>
+                <span class="badge" id="boardBadge">Basic Board</span>
+              </div>
+              <div class="target-wrap">
+                <div>
+                  <div class="target-number" id="targetNumber">—</div>
+                  <div class="target-caption" id="targetCaption">
+                    Start the game to generate a random target from 1–20 for the round.
+                  </div>
+                </div>
+                <div class="mini-stats">
+                  <div class="mini-stat">
+                    <strong id="currentPlayerStat">—</strong>
+                    <span>Current player</span>
+                  </div>
+                  <div class="mini-stat">
+                    <strong id="turnScoreStat">0</strong>
+                    <span>Turn total</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <aside class="panel">
+            <div class="panel-inner">
+              <h2 class="section-title">Game Setup</h2>
+
+              <div class="setup-grid">
+                <div>
+                  <div class="fields">
+                    <div class="field">
+                      <label for="playerName">Player name</label>
+                      <input id="playerName" type="text" placeholder="Enter player name" maxlength="24" />
+                    </div>
+                    <div class="field">
+                      <label for="boardSelect">Board type</label>
+                      <select id="boardSelect" aria-label="Board selection">
+                        <option value="basic">Basic</option>
+                        <option value="quad">Quad Board</option>
+                      </select>
+                    </div>
+                    <button class="btn btn-primary" id="addPlayerBtn" type="button">Add Player</button>
+                  </div>
+                </div>
+
+                <div>
+                  <button class="btn btn-secondary" id="startGameBtn" type="button">Start Match</button>
+                </div>
+
+                <div>
+                  <div class="section-title" style="margin-bottom:.55rem;">Players</div>
+                  <div class="player-list" id="playerList"></div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <section class="panel reveal" id="gamePanel">
+          <div class="panel-inner">
+            <div class="player-turn">
+              <div>
+                <h2 id="turnTitle">Waiting for game start</h2>
+                <p id="turnSubtitle">Add at least one player, choose a board, and start the match.</p>
+              </div>
+              <div class="current-mod">
+                <strong id="modifierDisplay">Single</strong>
+                <span>Default modifier resets after every dart unless Double, Triple, or Quad is selected again.</span>
+              </div>
+            </div>
+
+            <div class="game-grid">
+              <div class="control-stack">
+                <div>
+                  <div class="section-title">Modifier</div>
+                  <div class="modifiers" id="modifierButtons">
+                    <button class="mod-btn active" data-mod="single" type="button">Single</button>
+                    <button class="mod-btn" data-mod="double" type="button">Double</button>
+                    <button class="mod-btn" data-mod="triple" type="button">Triple</button>
+                    <button class="mod-btn hidden" data-mod="quad" type="button" id="quadModifierBtn">Quad</button>
+                    <button class="mod-btn" data-mod="miss" type="button">Miss</button>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="section-title">Hit Number</div>
+                  <div class="numbers" id="numberButtons"></div>
+                </div>
+
+                <div>
+                  <div class="section-title">Current Darts</div>
+                  <div class="dart-tray" id="dartTray">
+                    <div class="dart-slot">
+                      <div class="slot-label">Dart 1</div>
+                      <div class="slot-hit">—</div>
+                      <div class="slot-score">0 pts</div>
+                    </div>
+                    <div class="dart-slot">
+                      <div class="slot-label">Dart 2</div>
+                      <div class="slot-hit">—</div>
+                      <div class="slot-score">0 pts</div>
+                    </div>
+                    <div class="dart-slot">
+                      <div class="slot-label">Dart 3</div>
+                      <div class="slot-hit">—</div>
+                      <div class="slot-score">0 pts</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="actions">
+                  <div class="left-actions">
+                    <button class="btn undo-btn" id="undoBtn" type="button">Undo</button>
+                    <button class="btn btn-secondary" id="resetTurnBtn" type="button">Clear Turn</button>
+                  </div>
+                  <div class="right-actions">
+                    <button class="btn submit-btn" id="submitScoreBtn" type="button">Submit Score</button>
+                    <button class="btn btn-secondary" id="newGameBtn" type="button">New Match</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="reveal">
+        <section class="panel">
+          <div class="panel-inner">
+            <div class="scoreboard-head">
+              <div>
+                <h3>Scoreboard</h3>
+                <p>Totals update only after the current player's score is submitted.</p>
+              </div>
+              <div class="badge" id="playersCount">0 Players</div>
+            </div>
+
+            <div style="overflow:auto;">
+              <table class="board-table" aria-label="Player scoreboard">
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>R1</th>
+                    <th>R2</th>
+                    <th>R3</th>
+                    <th>R4</th>
+                    <th>R5</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody id="scoreboardBody">
+                  <tr>
+                    <td class="name" colspan="7" style="text-align:center;color:var(--muted);font-weight:500;">No players added yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="end-banner hidden" id="winnerBanner">
+              <h4 id="winnerTitle">Winner</h4>
+              <p id="winnerText"></p>
+            </div>
+
+            <div class="log" id="roundLog">
+              <div class="log-item">
+                <strong>How scoring works:</strong> each dart scores only if it hits the current round target number. Singles = target ×1, doubles = ×2, triples = ×3, quads = ×4 on quad board only, miss = 0.
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      players: [],
+      board: 'basic',
+      started: false,
+      round: 1,
+      currentPlayerIndex: 0,
+      targets: [],
+      currentModifier: 'single',
+      currentTurnDarts: [],
+      gameOver: false
+    };
+
+    const playerNameInput = document.getElementById('playerName');
+    const boardSelect = document.getElementById('boardSelect');
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const playerList = document.getElementById('playerList');
+    const globalStatus = document.getElementById('globalStatus');
+    const boardBadge = document.getElementById('boardBadge');
+    const roundMeta = document.getElementById('roundMeta');
+    const targetNumberEl = document.getElementById('targetNumber');
+    const targetCaption = document.getElementById('targetCaption');
+    const currentPlayerStat = document.getElementById('currentPlayerStat');
+    const turnScoreStat = document.getElementById('turnScoreStat');
+    const turnTitle = document.getElementById('turnTitle');
+    const turnSubtitle = document.getElementById('turnSubtitle');
+    const modifierDisplay = document.getElementById('modifierDisplay');
+    const numberButtons = document.getElementById('numberButtons');
+    const modifierButtons = document.getElementById('modifierButtons');
+    const quadModifierBtn = document.getElementById('quadModifierBtn');
+    const dartTray = document.getElementById('dartTray');
+    const undoBtn = document.getElementById('undoBtn');
+    const resetTurnBtn = document.getElementById('resetTurnBtn');
+    const submitScoreBtn = document.getElementById('submitScoreBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const scoreboardBody = document.getElementById('scoreboardBody');
+    const playersCount = document.getElementById('playersCount');
+    const winnerBanner = document.getElementById('winnerBanner');
+    const winnerTitle = document.getElementById('winnerTitle');
+    const winnerText = document.getElementById('winnerText');
+    const roundLog = document.getElementById('roundLog');
+
+    function createNumberButtons() {
+      numberButtons.innerHTML = '';
+      for (let i = 1; i <= 20; i++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'number-btn';
+        btn.textContent = i;
+        btn.dataset.value = i;
+        btn.addEventListener('click', () => registerHit(i));
+        numberButtons.appendChild(btn);
+      }
+
+      const missBtn = document.createElement('button');
+      missBtn.type = 'button';
+      missBtn.className = 'number-btn miss';
+      missBtn.textContent = 'Miss';
+      missBtn.addEventListener('click', () => registerMiss());
+      numberButtons.appendChild(missBtn);
+    }
+
+    function setStatus(message) {
+      globalStatus.textContent = message;
+    }
+
+    function updateBoardUI() {
+      state.board = boardSelect.value;
+      boardBadge.textContent = state.board === 'quad' ? 'Quad Board' : 'Basic Board';
+      quadModifierBtn.classList.toggle('hidden', state.board !== 'quad');
+      if (state.board !== 'quad' && state.currentModifier === 'quad') {
+        state.currentModifier = 'single';
+      }
+      renderModifierState();
+    }
+
+    function addPlayer() {
+      const name = playerNameInput.value.trim();
+      if (!name) {
+        setStatus('Enter a player name before adding.');
+        playerNameInput.focus();
+        return;
+      }
+      if (state.started) {
+        setStatus('Start a new match to change players.');
+        return;
+      }
+      if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+        setStatus('Player names must be unique.');
+        return;
+      }
+
+      state.players.push({
+        name,
+        scores: [null, null, null, null, null],
+        total: 0
+      });
+
+      playerNameInput.value = '';
+      renderPlayers();
+      renderScoreboard();
+      setStatus(`${name} added. Add more players or start the match.`);
+    }
+
+    function removePlayer(index) {
+      if (state.started) return;
+      state.players.splice(index, 1);
+      renderPlayers();
+      renderScoreboard();
+      setStatus('Player removed.');
+    }
+
+    function renderPlayers() {
+      playerList.innerHTML = '';
+      playersCount.textContent = `${state.players.length} ${state.players.length === 1 ? 'Player' : 'Players'}`;
+
+      if (!state.players.length) {
+        const empty = document.createElement('div');
+        empty.className = 'log-item';
+        empty.textContent = 'No players yet. Add everyone before starting the match.';
+        playerList.appendChild(empty);
+        return;
+      }
+
+      state.players.forEach((player, index) => {
+        const chip = document.createElement('div');
+        chip.className = 'player-chip';
+        chip.innerHTML = `<span>${player.name}</span>`;
+        if (!state.started) {
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.setAttribute('aria-label', `Remove ${player.name}`);
+          removeBtn.textContent = '×';
+          removeBtn.addEventListener('click', () => removePlayer(index));
+          chip.appendChild(removeBtn);
+        }
+        playerList.appendChild(chip);
+      });
+    }
+
+    function randomTarget() {
+      return Math.floor(Math.random() * 20) + 1;
+    }
+
+    function startGame() {
+      if (state.players.length < 1) {
+        setStatus('Add at least one player to start.');
+        return;
+      }
+
+      state.started = true;
+      state.gameOver = false;
+      state.board = boardSelect.value;
+      state.round = 1;
+      state.currentPlayerIndex = 0;
+      state.currentModifier = 'single';
+      state.currentTurnDarts = [];
+      state.targets = Array.from({ length: 5 }, () => randomTarget());
+      state.players = state.players.map(p => ({
+        ...p,
+        scores: [null, null, null, null, null],
+        total: 0
+      }));
+
+      winnerBanner.classList.add('hidden');
+      roundLog.innerHTML = `
+        <div class="log-item">
+          <strong>How scoring works:</strong> each dart scores only if it hits the current round target number. Singles = target ×1, doubles = ×2, triples = ×3, quads = ×4 on quad board only, miss = 0.
+        </div>
+      `;
+
+      boardSelect.disabled = true;
+      renderPlayers();
+      updateBoardUI();
+      updateRoundDisplay();
+      renderModifierState();
+      renderDarts();
+      renderScoreboard();
+      updateTurnHeader();
+      setStatus('Match live. Enter darts, then press Submit Score to move to the next player.');
+    }
+
+    function updateRoundDisplay() {
+      roundMeta.textContent = `Round ${state.round} of 5`;
+      const target = state.targets[state.round - 1];
+      targetNumberEl.textContent = target ?? '—';
+      targetCaption.textContent = state.started
+        ? `All players chase ${target} this round. Only darts that hit ${target} score.`
+        : 'Start the game to generate a random target from 1–20 for the round.';
+    }
+
+    function updateTurnHeader() {
+      if (!state.started) {
+        turnTitle.textContent = 'Waiting for game start';
+        turnSubtitle.textContent = 'Add at least one player, choose a board, and start the match.';
+        currentPlayerStat.textContent = '—';
+        return;
+      }
+
+      const player = state.players[state.currentPlayerIndex];
+      const target = state.targets[state.round - 1];
+      turnTitle.textContent = `${player.name}'s Turn`;
+      turnSubtitle.textContent = `Round ${state.round} target: ${target} • Record up to 3 darts, then submit score.`;
+      currentPlayerStat.textContent = player.name;
+    }
+
+    function renderModifierState() {
+      [...modifierButtons.querySelectorAll('.mod-btn')].forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mod === state.currentModifier);
+      });
+      modifierDisplay.textContent =
+        state.currentModifier.charAt(0).toUpperCase() + state.currentModifier.slice(1);
+    }
+
+    function modifierMultiplier(mod) {
+      if (mod === 'double') return 2;
+      if (mod === 'triple') return 3;
+      if (mod === 'quad') return 4;
+      return 1;
+    }
+
+    function registerMiss() {
+      if (!canRecordDart()) return;
+      state.currentTurnDarts.push({
+        display: 'Miss',
+        score: 0
+      });
+      state.currentModifier = 'single';
+      renderModifierState();
+      renderDarts();
+    }
+
+    function registerHit(number) {
+      if (!canRecordDart()) return;
+
+      const mod = state.currentModifier === 'miss' ? 'single' : state.currentModifier;
+      if (mod === 'quad' && state.board !== 'quad') {
+        setStatus('Quad is only available on the quad board.');
+        state.currentModifier = 'single';
+        renderModifierState();
+        return;
+      }
+
+      const target = state.targets[state.round - 1];
+      let score = 0;
+
+      if (number === target) {
+        score = target * modifierMultiplier(mod);
+      }
+
+      const prefixMap = {
+        single: 'S',
+        double: 'D',
+        triple: 'T',
+        quad: 'Q'
+      };
+
+      state.currentTurnDarts.push({
+        display: `${prefixMap[mod] || 'S'}${number}`,
+        score
+      });
+
+      state.currentModifier = 'single';
+      renderModifierState();
+      renderDarts();
+    }
+
+    function canRecordDart() {
+      if (!state.started || state.gameOver) {
+        setStatus('Start a match before entering scores.');
+        return false;
+      }
+      if (state.currentTurnDarts.length >= 3) {
+        setStatus('This turn already has 3 darts. Submit score or undo.');
+        return false;
+      }
+      return true;
+    }
+
+    function renderDarts() {
+      dartTray.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const dart = state.currentTurnDarts[i];
+        const slot = document.createElement('div');
+        slot.className = 'dart-slot';
+        slot.innerHTML = `
+          <div class="slot-label">Dart ${i + 1}</div>
+          <div class="slot-hit">${dart ? dart.display : '—'}</div>
+          <div class="slot-score">${dart ? `${dart.score} pts` : '0 pts'}</div>
+        `;
+        dartTray.appendChild(slot);
+      }
+      turnScoreStat.textContent = currentTurnTotal();
+    }
+
+    function currentTurnTotal() {
+      return state.currentTurnDarts.reduce((sum, dart) => sum + dart.score, 0);
+    }
+
+    function undoDart() {
+      if (!state.currentTurnDarts.length) {
+        setStatus('Nothing to undo.');
+        return;
+      }
+      state.currentTurnDarts.pop();
+      renderDarts();
+      setStatus('Last dart removed.');
+    }
+
+    function clearTurn() {
+      state.currentTurnDarts = [];
+      state.currentModifier = 'single';
+      renderModifierState();
+      renderDarts();
+      setStatus('Current turn cleared.');
+    }
+
+    function submitScore() {
+      if (!state.started || state.gameOver) return;
+
+      const player = state.players[state.currentPlayerIndex];
+      const turnTotal = currentTurnTotal();
+      player.scores[state.round - 1] = turnTotal;
+      player.total = player.scores.reduce((sum, val) => sum + (val || 0), 0);
+
+      appendLog(`${player.name} submitted <strong>${turnTotal}</strong> in Round ${state.round}. Darts: ${state.currentTurnDarts.map(d => d.display).join(', ') || 'none'}.`);
+
+      state.currentTurnDarts = [];
+      state.currentModifier = 'single';
+      renderModifierState();
+      renderDarts();
+
+      if (state.currentPlayerIndex < state.players.length - 1) {
+        state.currentPlayerIndex += 1;
+      } else {
+        if (state.round < 5) {
+          state.round += 1;
+          state.currentPlayerIndex = 0;
+        } else {
+          endGame();
+          renderScoreboard();
+          updateTurnHeader();
+          updateRoundDisplay();
+          return;
+        }
+      }
+
+      renderScoreboard();
+      updateRoundDisplay();
+      updateTurnHeader();
+      setStatus('Score submitted. Next player is up.');
+    }
+
+    function appendLog(html) {
+      const item = document.createElement('div');
+      item.className = 'log-item';
+      item.innerHTML = html;
+      roundLog.prepend(item);
+    }
+
+    function renderScoreboard() {
+      if (!state.players.length) {
+        scoreboardBody.innerHTML = `
+          <tr>
+            <td class="name" colspan="7" style="text-align:center;color:var(--muted);font-weight:500;">No players added yet.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      const winners = getWinners();
+      scoreboardBody.innerHTML = '';
+
+      state.players.forEach((player, index) => {
+        const tr = document.createElement('tr');
+        if (state.started && index === state.currentPlayerIndex && !state.gameOver) {
+          tr.classList.add('active-row');
+        }
+        if (state.gameOver && winners.includes(player.name)) {
+          tr.classList.add('winner');
+        }
+
+        tr.innerHTML = `
+          <td class="name">${player.name}</td>
+          <td>${player.scores[0] ?? '—'}</td>
+          <td>${player.scores[1] ?? '—'}</td>
+          <td>${player.scores[2] ?? '—'}</td>
+          <td>${player.scores[3] ?? '—'}</td>
+          <td>${player.scores[4] ?? '—'}</td>
+          <td><strong>${player.total}</strong></td>
+        `;
+        scoreboardBody.appendChild(tr);
+      });
+    }
+
+    function getWinners() {
+      if (!state.players.length) return [];
+      const max = Math.max(...state.players.map(p => p.total));
+      return state.players.filter(p => p.total === max).map(p => p.name);
+    }
+
+    function endGame() {
+      state.gameOver = true;
+      state.started = false;
+
+      const winners = getWinners();
+      const high = Math.max(...state.players.map(p => p.total));
+
+      winnerBanner.classList.remove('hidden');
+      if (winners.length === 1) {
+        winnerTitle.textContent = `Winner: ${winners[0]}`;
+        winnerText.textContent = `${winners[0]} takes Flash Point with ${high} points after 5 rounds.`;
+        setStatus(`Match complete. ${winners[0]} wins with ${high} points.`);
+      } else {
+        winnerTitle.textContent = 'Tie Game';
+        winnerText.textContent = `${winners.join(', ')} share the win with ${high} points.`;
+        setStatus(`Match complete. It's a tie at ${high} points.`);
+      }
+
+      turnTitle.textContent = 'Match Complete';
+      turnSubtitle.textContent = 'Review the scoreboard or start a new match.';
+      currentPlayerStat.textContent = 'Finished';
+    }
+
+    function newMatch() {
+      state.started = false;
+      state.gameOver = false;
+      state.round = 1;
+      state.currentPlayerIndex = 0;
+      state.targets = [];
+      state.currentTurnDarts = [];
+      state.currentModifier = 'single';
+      state.players = state.players.map(p => ({
+        ...p,
+        scores: [null, null, null, null, null],
+        total: 0
+      }));
+
+      boardSelect.disabled = false;
+      winnerBanner.classList.add('hidden');
+      renderPlayers();
+      renderScoreboard();
+      renderDarts();
+      renderModifierState();
+      updateRoundDisplay();
+      updateTurnHeader();
+
+      roundLog.innerHTML = `
+        <div class="log-item">
+          <strong>How scoring works:</strong> each dart scores only if it hits the current round target number. Singles = target ×1, doubles = ×2, triples = ×3, quads = ×4 on quad board only, miss = 0.
+        </div>
+      `;
+      setStatus('Match reset. Players remain loaded—press Start Match to play again.');
+    }
+
+    addPlayerBtn.addEventListener('click', addPlayer);
+    playerNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addPlayer();
+    });
+
+    boardSelect.addEventListener('change', updateBoardUI);
+    startGameBtn.addEventListener('click', startGame);
+    undoBtn.addEventListener('click', undoDart);
+    resetTurnBtn.addEventListener('click', clearTurn);
+    submitScoreBtn.addEventListener('click', submitScore);
+    newGameBtn.addEventListener('click', newMatch);
+
+    modifierButtons.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mod-btn');
+      if (!btn) return;
+      const mod = btn.dataset.mod;
+      if (mod === 'quad' && state.board !== 'quad') return;
+      state.currentModifier = mod;
+      renderModifierState();
+    });
+
+    function initReveal() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) entry.target.classList.add('in');
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll('.reveal').forEach((el, i) => {
+        el.style.transitionDelay = `${i * 70}ms`;
+        observer.observe(el);
+      });
+    }
+
+    createNumberButtons();
+    renderPlayers();
+    renderScoreboard();
+    renderDarts();
+    updateBoardUI();
+    updateTurnHeader();
+    updateRoundDisplay();
+    renderModifierState();
+    initReveal();
+  </script>
+</body>
+</html>
