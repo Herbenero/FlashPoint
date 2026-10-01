@@ -21,6 +21,7 @@
       --success: #67e8a5;
       --danger: #ff6b6b;
       --blue: #7cc6ff;
+      --purple: #c084fc;
       --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
       --radius: 22px;
       --radius-sm: 14px;
@@ -57,6 +58,8 @@
       border-radius: var(--radius);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      gap: 16px;
     }
 
     h1 {
@@ -68,7 +71,36 @@
 
     .controls-top {
       display: flex;
-      gap: 12px;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--soft);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+    }
+
+    .config-group label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    select, input[type="number"] {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-weight: 700;
+      outline: none;
     }
 
     button {
@@ -99,7 +131,7 @@
 
     .main-grid {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 360px;
       gap: 24px;
     }
 
@@ -134,39 +166,50 @@
 
     .target-number {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 5rem;
+      font-size: 5.5rem;
       color: var(--accent-2);
       line-height: 1;
+    }
+
+    .current-turn-indicator {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--blue);
+      margin-top: 10px;
     }
 
     /* Scoreboard */
     .scoreboard {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
       margin-bottom: 24px;
     }
 
     .player-card {
       background: var(--panel-2);
-      padding: 20px;
+      padding: 16px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--line);
+      text-align: center;
+      transition: all 0.2s ease;
     }
 
     .player-card.active {
       border-color: var(--accent);
-      background: rgba(255, 90, 54, 0.05);
+      background: rgba(255, 90, 54, 0.1);
+      box-shadow: 0 0 15px rgba(255, 90, 54, 0.2);
     }
 
     .player-name {
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       margin-bottom: 4px;
+      font-weight: 700;
     }
 
     .player-score {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 700;
     }
 
@@ -177,9 +220,13 @@
       gap: 12px;
     }
 
+    .keypad.quad-enabled {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
     .btn-mod {
-      padding: 24px 12px;
-      font-size: 1.1rem;
+      padding: 22px 8px;
+      font-size: 1rem;
       background: var(--panel-2);
       border: 1px solid var(--line);
     }
@@ -187,6 +234,7 @@
     .btn-mod.single { border-color: var(--blue); color: var(--blue); }
     .btn-mod.double { border-color: var(--accent-2); color: var(--accent-2); }
     .btn-mod.triple { border-color: var(--accent); color: var(--accent); }
+    .btn-mod.quad { border-color: var(--purple); color: var(--purple); }
     .btn-mod.bull { grid-column: span 1; background: var(--soft); }
     .btn-mod.miss { grid-column: span 1; color: var(--danger); }
 
@@ -196,7 +244,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: 400px;
+      max-height: 380px;
       overflow-y: auto;
     }
 
@@ -206,7 +254,7 @@
       padding: 12px 16px;
       background: var(--panel-2);
       border-radius: var(--radius-sm);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
   </style>
 </head>
@@ -216,7 +264,20 @@
     <header>
       <h1>FLASH POINT</h1>
       <div class="controls-top">
-        <button onclick="startNewGame()" class="btn-accent">New Game</button>
+        <div class="config-group">
+          <label for="player-count">Players:</label>
+          <input type="number" id="player-count" min="1" max="8" value="2" style="width: 50px;">
+        </div>
+
+        <div class="config-group">
+          <label for="board-type">Board:</label>
+          <select id="board-type" onchange="toggleBoardType()">
+            <option value="basic">Standard Board</option>
+            <option value="quad">Quad Board</option>
+          </select>
+        </div>
+
+        <button onclick="startNewGame()" class="btn-accent">Start New Game</button>
       </div>
     </header>
 
@@ -227,13 +288,15 @@
         <div class="target-card card">
           <div class="target-title">Current Round Target</div>
           <div class="target-number" id="target-display">--</div>
+          <div class="current-turn-indicator" id="turn-display">Player 1's Turn</div>
         </div>
 
         <!-- Modifier Controls -->
-        <div class="keypad">
+        <div class="keypad" id="keypad">
           <button class="btn-mod single" onclick="handleInput(1)">SINGLE (1x)</button>
           <button class="btn-mod double" onclick="handleInput(2)">DOUBLE (2x)</button>
           <button class="btn-mod triple" onclick="handleInput(3)">TRIPLE (3x)</button>
+          <button class="btn-mod quad" id="quad-btn" style="display: none;" onclick="handleInput(4)">QUAD (4x)</button>
           <button class="btn-mod bull" onclick="handleBull(25)">OUTER BULL (25)</button>
           <button class="btn-mod bull" onclick="handleBull(50)">INNER BULL (50)</button>
           <button class="btn-mod miss" onclick="handleInput(0)">MISS (0)</button>
@@ -244,16 +307,13 @@
       <div style="display: flex; flex-direction: column; gap: 24px;">
         <div class="card">
           <h2 style="margin-bottom: 16px; font-size: 1.2rem;">Scoreboard</h2>
-          <div class="scoreboard">
-            <div class="player-card active">
-              <div class="player-name">Player 1</div>
-              <div class="player-score" id="total-score">0</div>
-            </div>
+          <div class="scoreboard" id="scoreboard">
+            <!-- Dynamic Player Scores -->
           </div>
         </div>
 
         <div class="card" style="flex: 1;">
-          <h2 style="margin-bottom: 16px; font-size: 1.2rem;">Round Log</h2>
+          <h2 style="margin-bottom: 16px; font-size: 1.2rem;">Game Log</h2>
           <ul class="history-list" id="history-log">
             <!-- Log entries appear here -->
           </ul>
@@ -265,73 +325,143 @@
   <script>
     let availableNumbers = [];
     let currentTarget = null;
-    let totalScore = 0;
-    let roundCount = 0;
+    let players = [];
+    let currentPlayerIndex = 0;
+    let roundCount = 1;
+
+    function toggleBoardType() {
+      const boardType = document.getElementById('board-type').value;
+      const quadBtn = document.getElementById('quad-btn');
+      const keypad = document.getElementById('keypad');
+
+      if (boardType === 'quad') {
+        quadBtn.style.display = 'block';
+        keypad.classList.add('quad-enabled');
+      } else {
+        quadBtn.style.display = 'none';
+        keypad.classList.remove('quad-enabled');
+      }
+    }
 
     function startNewGame() {
-      // Initialize pool with numbers 1 through 20
-      availableNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
-      totalScore = 0;
-      roundCount = 0;
+      // Setup players based on selector input
+      const countInput = parseInt(document.getElementById('player-count').value) || 1;
+      const numPlayers = Math.max(1, Math.min(8, countInput));
       
-      document.getElementById('total-score').innerText = totalScore;
+      players = [];
+      for (let i = 0; i < numPlayers; i++) {
+        players.push({ id: i + 1, name: `Player ${i + 1}`, score: 0 });
+      }
+
+      // Reset state & pool 1-20
+      availableNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
+      currentPlayerIndex = 0;
+      roundCount = 1;
+
+      // Update UI elements
+      toggleBoardType();
+      renderScoreboard();
       document.getElementById('history-log').innerHTML = '';
       
       nextRound();
     }
 
+    function renderScoreboard() {
+      const scoreboard = document.getElementById('scoreboard');
+      scoreboard.innerHTML = '';
+
+      players.forEach((player, idx) => {
+        const card = document.createElement('div');
+        card.className = `player-card ${idx === currentPlayerIndex ? 'active' : ''}`;
+        card.id = `player-card-${idx}`;
+        card.innerHTML = `
+          <div class="player-name">${player.name}</div>
+          <div class="player-score" id="player-score-${idx}">${player.score}</div>
+        `;
+        scoreboard.appendChild(card);
+      });
+    }
+
     function nextRound() {
       if (availableNumbers.length === 0) {
         document.getElementById('target-display').innerText = "DONE";
-        alert(`Game Over! Final Score: ${totalScore}`);
+        document.getElementById('turn-display').innerText = "Game Complete!";
+        announceWinner();
         return;
       }
 
-      // Pick random index from available pool
+      // Select random target from remaining numbers without repeating
       const randomIndex = Math.floor(Math.random() * availableNumbers.length);
       currentTarget = availableNumbers[randomIndex];
-
-      // Remove selected number from pool
       availableNumbers.splice(randomIndex, 1);
 
-      // Display selected target
       document.getElementById('target-display').innerText = currentTarget;
+      updateTurnDisplay();
+    }
+
+    function updateTurnDisplay() {
+      const activePlayer = players[currentPlayerIndex];
+      document.getElementById('turn-display').innerText = `${activePlayer.name}'s Turn (Round ${roundCount})`;
+      
+      // Update score card highlights
+      players.forEach((_, idx) => {
+        const card = document.getElementById(`player-card-${idx}`);
+        if (card) {
+          if (idx === currentPlayerIndex) {
+            card.classList.add('active');
+          } else {
+            card.classList.remove('active');
+          }
+        }
+      });
+    }
+
+    function advanceTurn() {
+      currentPlayerIndex++;
+      if (currentPlayerIndex >= players.length) {
+        currentPlayerIndex = 0;
+        roundCount++;
+        nextRound();
+      } else {
+        updateTurnDisplay();
+      }
     }
 
     function handleInput(multiplier) {
-      if (!currentTarget) {
-        startNewGame();
-        return;
-      }
+      if (!currentTarget && availableNumbers.length === 0) return;
 
       const points = currentTarget * multiplier;
-      totalScore += points;
-      roundCount++;
+      const player = players[currentPlayerIndex];
+      player.score += points;
 
       let label = "MISS";
       if (multiplier === 1) label = "SINGLE";
       if (multiplier === 2) label = "DOUBLE";
       if (multiplier === 3) label = "TRIPLE";
+      if (multiplier === 4) label = "QUAD";
 
-      logRound(`Round ${roundCount}: Target ${currentTarget} x ${label} = ${points} pts`);
-      updateScore();
-      nextRound();
+      logRound(`${player.name} - R${roundCount} [T:${currentTarget}]: ${label} (+${points} pts)`);
+      updateScores();
+      advanceTurn();
     }
 
     function handleBull(value) {
       if (!currentTarget && availableNumbers.length === 0) return;
 
-      totalScore += value;
-      roundCount++;
+      const player = players[currentPlayerIndex];
+      player.score += value;
 
       const label = value === 50 ? "INNER BULL" : "OUTER BULL";
-      logRound(`Round ${roundCount}: ${label} = ${value} pts`);
-      updateScore();
-      nextRound();
+      logRound(`${player.name} - R${roundCount}: ${label} (+${value} pts)`);
+      updateScores();
+      advanceTurn();
     }
 
-    function updateScore() {
-      document.getElementById('total-score').innerText = totalScore;
+    function updateScores() {
+      players.forEach((player, idx) => {
+        const scoreElem = document.getElementById(`player-score-${idx}`);
+        if (scoreElem) scoreElem.innerText = player.score;
+      });
     }
 
     function logRound(text) {
@@ -342,7 +472,27 @@
       log.prepend(li);
     }
 
-    // Initialize game automatically on load
+    function announceWinner() {
+      let maxScore = -1;
+      let winners = [];
+
+      players.forEach(p => {
+        if (p.score > maxScore) {
+          maxScore = p.score;
+          winners = [p.name];
+        } else if (p.score === maxScore) {
+          winners.push(p.name);
+        }
+      });
+
+      const resultText = winners.length > 1 
+        ? `It's a tie between ${winners.join(' & ')} with ${maxScore} pts!`
+        : `${winners[0]} wins with ${maxScore} pts!`;
+
+      alert(`Game Over!\n${resultText}`);
+    }
+
+    // Initialize default game state on page load
     startNewGame();
   </script>
 </body>
